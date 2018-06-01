@@ -1,5 +1,8 @@
 # Générateurs de nombres pseudo-aléatoires
 
+> Le code est disponible à l'adresse suivante :  
+https://github.com/Krytexo/prng
+
 ## Générateur à congruences linéaires
 
 La création de ce type de générateur en `python` se révèle extrêmement simple. Le code ci-dessous suffit en effet à créer un générateur paramétrable qu'il nous suffira de rappeler en boucle. On exploite la capacité de python à stocker des fonctions dans des variables, ce qui permet de déclarer un générateur avec certains paramètres et de l'appeler ensuite avec d'autres.
