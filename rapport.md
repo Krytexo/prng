@@ -59,3 +59,43 @@ Puisque la période *T<sub>max</sub>* est égale à 15, on peut se permettre dé
 </div>
 
 Dans le premier cas, la quatorzième itération nous permet de retomber sur un résultat déjà vu. On a donc une période presque maximale de 14 au lieu de 15. Dans le deuxième, la première itération nous ramène à l'état interne initial. On dit donc que sa période est de 1.
+
+L'implémentation est relativement simple. La fonction `prng()` ci-dessous est permet la génération de nouveaux nombres à partir de la graine. Pour représenter cette dernière, on utilise une queue (`deque` en Python), qui représente l'implémentation la plus efficace d'une file (FIFO : First In First Out). Celle-ci est intéressante puisqu'elle va permettre de décaler notre état interne à chaque appel de la fonction.
+
+```python
+seed = deque([1, 0, 1, 1, 0, 0, 1, 0])
+f = lambda q: q[2] ^ q[4] ^ q[7]
+
+def register_prng(f):
+	def prng(seed):
+		new = f(seed)
+		seed.popleft()
+		seed.append(new)
+		return (int(''.join(map(str, seed)), 2) / pow(2, len(seed)), seed)
+	return prng
+```
+
+Mais contrairement au premier PRNG, la graine ne peut servir directement de sortie dans cet algorithme. Ainsi, on ne peut pas rappeler la fonction sur elle-même en boucle puisque son entrée (la graine / l'état interne) ne correspond pas à la sortie (le résultat). Cela oblige à réviser l'implémentation en conséquence. Une des solutions serait de passer un `tuple` en entrée &ndash; contenant la graine et le résultat &ndash; qui serait aussi renvoyé en sortie afin de pouvoir rappeler la fonction récursivement. Deuxième solution &ndash; que j'ai mis en place : représenter chaque générateur comme un objet et modifier la graine qui serait alors contenue en attribu de l'objet en question.
+
+
+# Analyses statistiques
+
+Que déduire des observations réalisables sur ces deux générateurs ? Tout d'abord, que l'un comme l'autre permettent une bonne répartition des résultats. Ensuite que la période du LFSR implémenté est bien plus courte, la faute à la taille restreinte de l'état interne. En effet, les 2⁸ possibilités ne permettent d'obtenir que 256 valeurs différentes, ce qui &ndash; inévitablement &ndash; implique que le générateur bouclera très tôt.
+
+Lorsqu'on observe la répartition du LCG on se rend compte qu'il couvre la quasi-totalité du spectre disponible. On remarque cependant qu'en prenant une graine trop "basse", les premiers résultats forment une suite croissante, presque exponentielle. Mais une fois le modulo atteint, le générateur prend une tout autre tournure avec une répartition très large.
+
+![Répartition](src/rep_lcg_1000.png)
+
+Cependant, comme cela a été exposé ci-dessus, si l'on prend les résultats modulo 2, on se rend vite compte que tous les résultats sont impairs.
+
+![Répartition](src/rep_lcg_1000_mod2.png)
+
+Le LFSR se comporte différemment puisque l'on peut observer la répétition d'un pattern dans la génération. Si l'amplitude est bien couverte (sur l'axe Y), la boucle sur X est très visible.
+
+![Répartition](src/rep_lfsr_1000.png)
+
+Contrairement au LCG, prendre les résultats modulo 2 ne révèle aucun travers particulier dans la génération. La seule chose que l'on peut observer sur le graphique ci-dessous reste le pattern qui se répète, à l'image de ce que l'on vient d'observer.
+
+![Répartition](src/rep_lfsr_1000_mod2.png)
+
+Jouer sur les paramètres permet de faire varier plusieurs caractéristiques des résultats. La période, tout d'abord, à l'image de ce que l'on avait observer dans la première partie, mais aussi la manière de couvrir l'amplitude disponible. Ainsi, on remarque par exemple que la suite observée au début des résultats du LCG peut tout à fait disparaître si l'on fait augmenter le pas entre chaque résultat. On atteint ainsi la limite imposée par le modulo beaucoup plus tôt, ce qui fait disparaître cette figure. Modifier la formule du LFSR permet aussi de modifier le pattern de répétition et ainsi peut-être de le rendre plus intéressant &ndash; bien que le LFSR ne prenne tout son sens que combiné.
